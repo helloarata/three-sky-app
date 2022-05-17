@@ -10,6 +10,7 @@ window.addEventListener('DOMContentLoaded', () => {
   app.keyUp();
   app.ontouch();
   app.touchend();
+
 },false);
 
 class App3{
@@ -21,11 +22,11 @@ class App3{
   }
   static get SIGNATURE_COLOR(){
     return {
-      gray: 0x9c9cac,
-      purple: 0xaf8fac,
+      gray:     0x9c9cac,
+      purple:   0xaf8fac,
       lavender: 0x946ca8,
-      orange: 0xedd59f,
-	    white: 0xd8d0d1,
+      orange:   0xedd59f,
+	    white:    0xd8d0d1,
     }
   }
   static get RENDERER_PARAM(){
@@ -39,7 +40,7 @@ class App3{
       fov: 60,
       aspect: App3.SIZES.width / App3.SIZES.height,
       near: 1,
-      far: 10000,
+      far: 4000,
     }
   }
 
@@ -47,24 +48,22 @@ class App3{
     this.renderer;
     this.scene;
     this.camera;
-    this.hemisphereLight; 
-    this.shadowLight; 
+    this.hemisphereLight;
+    this.directionalLight;
     this.boxGeometry;
     this.meshPhongMaterial;
     this.mesh;
-    this.controls;  
+    this.controls;
     this.axesHelper;
-    this.clouds; 
+    this.clouds;
     this.sky;
     this.isDown = false;
     this.isTouch = false;
-    this.timer;
     this.render = this.render.bind(this);
     
   }
 
   createRenderer(){
-    // https://threejs.org/docs/?q=WebGLRenderer#api/en/renderers/WebGLRenderer
     this.renderer = new THREE.WebGLRenderer(App3.RENDERER_PARAM);
     this.renderer.setSize(App3.SIZES.width, App3.SIZES.height);
     const container = document.getElementById("webgl");
@@ -72,32 +71,27 @@ class App3{
   }
 
   createScene(){
-    // https://threejs.org/docs/?q=Scene#api/en/scenes/Scene
     this.scene = new THREE.Scene();
-    // https://threejs.org/docs/?q=Fog#api/en/scenes/Fog
-    this.scene.fog = new THREE.Fog(App3.SIGNATURE_COLOR.orange, 100, 950); // 0xe6c885
+    this.scene.fog = new THREE.Fog(App3.SIGNATURE_COLOR.orange, 100, 1000);
   }
 
   createCamera(){
-    // https://threejs.org/docs/?q=PerspectiveCamera#api/en/cameras/PerspectiveCamera
     this.camera = new THREE.PerspectiveCamera(
       App3.CAMERA_PARAM.fov,
       App3.CAMERA_PARAM.aspect,
       App3.CAMERA_PARAM.near,
       App3.CAMERA_PARAM.far,
     );
-    this.camera.position.set(-70, 640, 80); 
+    this.camera.position.set(-100, 500, 600);
   }
 
   createLights(){
-    // https://threejs.org/docs/?q=HemisphereLight#api/en/lights/HemisphereLight
-    this.hemisphereLight = new THREE.HemisphereLight(App3.SIGNATURE_COLOR.gray, App3.SIGNATURE_COLOR.purple, 1);
-    // https://threejs.org/docs/?q=DirectionalLight#api/en/lights/DirectionalLight
-    this.shadowLight     = new THREE.DirectionalLight(App3.SIGNATURE_COLOR.lavender, .9);
-    this.shadowLight.position.set(1, 0.55, 5);
-   
+    this.hemisphereLight  = new THREE.HemisphereLight(App3.SIGNATURE_COLOR.gray, App3.SIGNATURE_COLOR.purple, 1);
+    this.directionalLight = new THREE.DirectionalLight(App3.SIGNATURE_COLOR.lavender, .9);
+    this.directionalLight.position.set(1, 0.55, 5);
+
     this.scene.add(this.hemisphereLight);
-    this.scene.add(this.shadowLight);
+    this.scene.add(this.directionalLight);
   }
 
   init(){
@@ -110,7 +104,7 @@ class App3{
   }
 
   render(){
-    if(this.isDown)this.sky.rotation.z += 0.001;
+    if(this.isDown)this.sky.rotation.z  += 0.001;
     if(this.isTouch)this.sky.rotation.z += 0.001;
     requestAnimationFrame(this.render);
     this.renderer.render(this.scene, this.camera);
@@ -125,28 +119,22 @@ class App3{
   }
 
   helper(){
-    const axesBarLength = 200.0;
+    const axesBarLength = 500.0;
     this.axesHelper = new THREE.AxesHelper(axesBarLength);
     this.scene.add(this.axesHelper);
   }
-
   controls(){ 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
   }
 
   createCloud(){
-    // https://threejs.org/docs/?q=Group#api/en/objects/Group
     this.clouds = new THREE.Group();
-    this.clouds.name = "cloud";
-    // https://threejs.org/docs/?q=BoxGeometry#api/en/geometries/BoxGeometry
     this.boxGeometry = new THREE.BoxGeometry(20, 20, 20);
-    // https://threejs.org/docs/?q=MeshPhongMaterial#api/en/materials/MeshPhongMaterial
     this.meshPhongMaterial = new THREE.MeshPhongMaterial({color: App3.SIGNATURE_COLOR.white});
     
     let blocks = 3 + Math.floor(Math.random() * 3);
     for(let i = 0; i < blocks; i++){
-      // https://threejs.org/docs/?q=Mesh#api/en/objects/Mesh
-      const mesh = new THREE.Mesh(this.boxGeometry.clone(), this.meshPhongMaterial);
+      const mesh = new THREE.Mesh(this.boxGeometry, this.meshPhongMaterial);
       mesh.position.x = i * 12;
       mesh.position.y = Math.random() * 10;
       mesh.position.z = Math.random() * 10;
@@ -159,7 +147,6 @@ class App3{
   }
 
   createSky(){
-    // https://threejs.org/docs/?q=Group#api/en/objects/Group
     this.sky = new THREE.Group();
     const CLOUDS = 100;
     const cloudsArray = [];
@@ -168,10 +155,10 @@ class App3{
       this.createCloud();
       cloudsArray.push(this.clouds);
       let angle = stepAngle * i;
-      let radius = 750 + Math.random() * 200;
+      let radius = 500 + Math.random() * 200;
       cloudsArray[i].position.x = Math.cos(angle) * radius;
       cloudsArray[i].position.y = Math.sin(angle) * radius;
-      cloudsArray[i].position.z = -400 -Math.random() * 400;
+      cloudsArray[i].position.z = (-400 -Math.random() * 400) / 2.0 + 400;
       this.sky.add(cloudsArray[i]);
     }
     this.scene.add(this.sky);
@@ -201,6 +188,7 @@ class App3{
   
     }, false);
   }
+
   touchend(){
     window.addEventListener('touchend', () => {
       this.isTouch = false;
